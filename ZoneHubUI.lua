@@ -4748,6 +4748,48 @@ function Library:CreateWindow(WindowInfo)
             })
         )
         Library:AddOutline(MainFrame)
+
+        --// ZoneHub baked: main-window glow (rim + reference halo).
+        --   Mirrors Evomon's old ensureLiteMenuGlow so every window gets the ZoneHub look by default.
+        --   Rim  = HoverEdge RGB(232,166,255) (lightened OutlineColor), Thickness 2.1, Transparency 0.
+        --   Halo = ZoneHubReferenceGlow frame inset -3px behind Main, UICorner = CornerRadius+3,
+        --          stroke Color = OutlineColor (== old HoverGlow RGB(226,154,255)), Thickness 4, Transparency 0.36.
+        --   Guarded so it can never error on any window. \\--
+        pcall(function()
+            MainFrame.ClipsDescendants = false
+            New("UIStroke", {
+                Name = "ZoneHubMainRim",
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                Color = Color3.fromRGB(232, 166, 255),
+                Thickness = 2.1,
+                Transparency = 0,
+                Parent = MainFrame,
+            })
+            local ReferenceGlow = New("Frame", {
+                Name = "ZoneHubReferenceGlow",
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Active = false,
+                Selectable = false,
+                Position = UDim2.fromOffset(-3, -3),
+                Size = UDim2.new(1, 6, 1, 6),
+                ZIndex = math.max(0, (tonumber(MainFrame.ZIndex) or 1) - 1),
+                Parent = MainFrame,
+            })
+            New("UICorner", {
+                CornerRadius = UDim.new(0, WindowInfo.CornerRadius + 3),
+                Parent = ReferenceGlow,
+            })
+            New("UIStroke", {
+                Name = "ZoneHubReferenceGlowStroke",
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                Color = "OutlineColor",
+                Thickness = 4,
+                Transparency = 0.36,
+                Parent = ReferenceGlow,
+            })
+        end)
+
         Library:MakeLine(MainFrame, {
             Position = UDim2.fromOffset(0, 48),
             Size = UDim2.new(1, 0, 0, 1),

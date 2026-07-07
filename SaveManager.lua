@@ -518,13 +518,6 @@ function SaveManager:Load(ConfigName: string): (boolean, string?)
     end
 
     --// Elements
-    -- Apply every saved value SYNCHRONOUSLY, in file order. The previous `task.spawn(Parser.Load, ...)` applied
-    -- all elements CONCURRENTLY in separate threads a moment AFTER Load() returned (so after the menu was already
-    -- shown). That caused two bugs: (1) a visible "flicker" as ~60 toggles/dropdowns updated a beat after the menu
-    -- appeared, and (2) a race — toggles with mutual-exclusion callbacks (one calls OtherToggle:SetValue(false))
-    -- fired in random order and stomped each other, so a toggle the config had ON could end up OFF, differently
-    -- each launch. Running the loads in-order on this thread makes the restore deterministic and complete before
-    -- the window is shown. pcall keeps one bad element from aborting the rest (the isolation task.spawn gave).
     for _, Option in Decoded.objects do
         if not Option.type then continue end
         if IgnoreIndexes[Option.idx] then continue end
@@ -532,7 +525,7 @@ function SaveManager:Load(ConfigName: string): (boolean, string?)
         local Parser = ElementParser[Option.type]
         if not Parser then continue end
 
-        pcall(Parser.Load, Option.idx, Option)
+        task.spawn(Parser.Load, Option.idx, Option)
     end
 
     return true

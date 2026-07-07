@@ -238,18 +238,18 @@ local Library = {
     CornerRadius = 8,
 
     IsLightTheme = false,
-    --// ZoneHub "Pastel Orchid" theme baked in as the defaults \\--
+    --// ZoneHub "Catppuccin" theme baked in as the defaults (soft pink accent + muted outline = no glare) \\--
     Scheme = {
-        BackgroundColor = Color3.fromHex("1b1622"),
-        MainColor = Color3.fromHex("231d2a"),
-        AccentColor = Color3.fromHex("ffb7e6"),
-        OutlineColor = Color3.fromHex("e29aff"),
-        FontColor = Color3.fromHex("fff7fc"),
+        BackgroundColor = Color3.fromHex("1e1e2e"),
+        MainColor = Color3.fromHex("302d41"),
+        AccentColor = Color3.fromHex("f5c2e7"),
+        OutlineColor = Color3.fromHex("575268"),
+        FontColor = Color3.fromHex("d9e0ee"),
         Font = ZoneHubFont,
 
         RedColor = Color3.fromRGB(255, 80, 96),
         DestructiveColor = Color3.fromRGB(225, 58, 75),
-        DarkColor = Color3.fromRGB(24, 19, 30),
+        DarkColor = Color3.fromRGB(24, 24, 37),
         WhiteColor = Color3.fromRGB(255, 250, 253),
 
         BackgroundImage = ""

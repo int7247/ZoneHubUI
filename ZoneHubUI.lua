@@ -1335,7 +1335,7 @@ function Library:AddDraggableMenu(TitleText)
     TitleBar.Active = true
     TitleBar.Parent = Panel
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -20, 1, 0)
+    Title.Size = UDim2.new(1, -34, 1, 0)
     Title.Position = UDim2.fromOffset(10, 0)
     Title.BackgroundTransparency = 1
     Title.Font = Enum.Font.GothamBold
@@ -1344,6 +1344,19 @@ function Library:AddDraggableMenu(TitleText)
     Title.TextSize = 14
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
+
+    -- Collapse button (top-right of the title bar): tap "−" to hide the content (panel shrinks to just the
+    -- title bar), tap "+" to reopen. Lets the user tuck an overlay away without opening the main menu.
+    local CollapseBtn = Instance.new("TextButton")
+    CollapseBtn.Size = UDim2.fromOffset(22, 22)
+    CollapseBtn.Position = UDim2.new(1, -24, 0, 2)
+    CollapseBtn.BackgroundTransparency = 1
+    CollapseBtn.AutoButtonColor = false
+    CollapseBtn.Font = Enum.Font.GothamBold
+    CollapseBtn.Text = "\226\136\146"   -- "−"
+    CollapseBtn.TextColor3 = Scheme.AccentColor
+    CollapseBtn.TextSize = 18
+    CollapseBtn.Parent = TitleBar
 
     local Content = Instance.new("Frame")
     Content.Position = UDim2.fromOffset(0, 26)
@@ -1357,8 +1370,20 @@ function Library:AddDraggableMenu(TitleText)
     Pad.PaddingLeft = UDim.new(0, 10); Pad.PaddingRight = UDim.new(0, 10)
     Pad.PaddingTop = UDim.new(0, 2);  Pad.PaddingBottom = UDim.new(0, 7)
 
-    Library:GiveSignal(Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Panel.Size = UDim2.fromOffset(212, 26 + math.max(0, Layout.AbsoluteContentSize.Y) + 9)
+    local Collapsed = false
+    local function applySize()
+        if Collapsed then
+            Panel.Size = UDim2.fromOffset(212, 26)
+        else
+            Panel.Size = UDim2.fromOffset(212, 26 + math.max(0, Layout.AbsoluteContentSize.Y) + 9)
+        end
+    end
+    Library:GiveSignal(Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(applySize))
+    Library:GiveSignal(CollapseBtn.MouseButton1Click:Connect(function()
+        Collapsed = not Collapsed
+        Content.Visible = not Collapsed
+        CollapseBtn.Text = Collapsed and "+" or "\226\136\146"
+        applySize()
     end))
     Library:MakeDraggable(Panel, TitleBar, true, false)
 

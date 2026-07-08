@@ -1307,7 +1307,7 @@ local function DraggableParent()
 end
 
 -- AddDraggableMenu(titleText) -> menu object with :AddLabel(text) (-> {SetText,SetVisible}), :SetVisible, :Destroy
-function Library:AddDraggableMenu(TitleText)
+function Library:AddDraggableMenu(TitleText, StartCollapsed)
     local Scheme = Library.Scheme
     local Gui = Instance.new("ScreenGui")
     Gui.Name = "ZoneHubDraggableMenu"
@@ -1378,14 +1378,17 @@ function Library:AddDraggableMenu(TitleText)
             Panel.Size = UDim2.fromOffset(212, 26 + math.max(0, Layout.AbsoluteContentSize.Y) + 9)
         end
     end
-    Library:GiveSignal(Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(applySize))
-    Library:GiveSignal(CollapseBtn.MouseButton1Click:Connect(function()
-        Collapsed = not Collapsed
+    local function setCollapsed(v)
+        Collapsed = v == true
         Content.Visible = not Collapsed
         CollapseBtn.Text = Collapsed and "+" or "\226\136\146"
         applySize()
-    end))
+    end
+    Library:GiveSignal(Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(applySize))
+    Library:GiveSignal(CollapseBtn.MouseButton1Click:Connect(function() setCollapsed(not Collapsed) end))
     Library:MakeDraggable(Panel, TitleBar, true, false)
+    -- start collapsed if requested (shows only the title bar + a "+" to expand)
+    if StartCollapsed then setCollapsed(true) end
 
     local Menu = { Gui = Gui, Panel = Panel }
     function Menu:AddLabel(Text)
@@ -1405,6 +1408,7 @@ function Library:AddDraggableMenu(TitleText)
         }
     end
     function Menu:SetVisible(v) Gui.Enabled = v ~= false end
+    function Menu:SetCollapsed(v) setCollapsed(v == true) end
     function Menu:Destroy() pcall(function() Gui:Destroy() end) end
     return Menu
 end

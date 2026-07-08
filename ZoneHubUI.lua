@@ -1297,18 +1297,107 @@ function Library:MakeOutline(Frame: GuiObject, Corner: number?, ZIndex: number?)
     return Holder, Outline
 end
 
---// Removed: Draggable widgets (mobile buttons UI) & Watermark (stubbed) \\--
-function Library:AddDraggableLabel(...)
-    return MakeStub("AddDraggableLabel")
+--// Draggable overlays (restored): floating panels/labels above the game, independent of the menu window.
+--   Themed from Library.Scheme, dragged via Library:MakeDraggable, cleaned up via Library:GiveSignal. \\--
+local function DraggableParent()
+    local p = Library.ScreenGui and Library.ScreenGui.Parent
+    if typeof(p) ~= "Instance" then pcall(function() p = (type(gethui) == "function" and gethui()) or game:GetService("CoreGui") end) end
+    if typeof(p) ~= "Instance" then p = game:GetService("CoreGui") end
+    return p
+end
+
+-- AddDraggableMenu(titleText) -> menu object with :AddLabel(text) (-> {SetText,SetVisible}), :SetVisible, :Destroy
+function Library:AddDraggableMenu(TitleText)
+    local Scheme = Library.Scheme
+    local Gui = Instance.new("ScreenGui")
+    Gui.Name = "ZoneHubDraggableMenu"
+    Gui.ResetOnSpawn = false
+    Gui.IgnoreGuiInset = true
+    Gui.DisplayOrder = 2147482500
+    Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    Gui.Parent = DraggableParent()
+
+    local Panel = Instance.new("Frame")
+    Panel.Size = UDim2.fromOffset(212, 40)
+    Panel.Position = UDim2.fromOffset(24, 200)
+    Panel.BackgroundColor3 = Scheme.MainColor
+    Panel.BorderSizePixel = 0
+    Panel.Active = true
+    Panel.Parent = Gui
+    Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 8)
+    local Stroke = Instance.new("UIStroke", Panel)
+    Stroke.Color = Scheme.AccentColor
+    Stroke.Thickness = 1.4
+
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Size = UDim2.new(1, 0, 0, 26)
+    TitleBar.BackgroundTransparency = 1
+    TitleBar.Active = true
+    TitleBar.Parent = Panel
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -20, 1, 0)
+    Title.Position = UDim2.fromOffset(10, 0)
+    Title.BackgroundTransparency = 1
+    Title.Font = Enum.Font.GothamBold
+    Title.Text = tostring(TitleText or "Menu")
+    Title.TextColor3 = Scheme.AccentColor
+    Title.TextSize = 14
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = TitleBar
+
+    local Content = Instance.new("Frame")
+    Content.Position = UDim2.fromOffset(0, 26)
+    Content.Size = UDim2.new(1, 0, 0, 0)
+    Content.BackgroundTransparency = 1
+    Content.Parent = Panel
+    local Layout = Instance.new("UIListLayout", Content)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Layout.Padding = UDim.new(0, 2)
+    local Pad = Instance.new("UIPadding", Content)
+    Pad.PaddingLeft = UDim.new(0, 10); Pad.PaddingRight = UDim.new(0, 10)
+    Pad.PaddingTop = UDim.new(0, 2);  Pad.PaddingBottom = UDim.new(0, 7)
+
+    Library:GiveSignal(Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Panel.Size = UDim2.fromOffset(212, 26 + math.max(0, Layout.AbsoluteContentSize.Y) + 9)
+    end))
+    Library:MakeDraggable(Panel, TitleBar, true, false)
+
+    local Menu = { Gui = Gui, Panel = Panel }
+    function Menu:AddLabel(Text)
+        local Lbl = Instance.new("TextLabel")
+        Lbl.Size = UDim2.new(1, 0, 0, 18)
+        Lbl.BackgroundTransparency = 1
+        Lbl.Font = Enum.Font.Gotham
+        Lbl.Text = tostring(Text or "")
+        Lbl.TextColor3 = Scheme.FontColor
+        Lbl.TextSize = 12
+        Lbl.TextXAlignment = Enum.TextXAlignment.Left
+        Lbl.RichText = true
+        Lbl.Parent = Content
+        return {
+            SetText = function(_, t) Lbl.Text = tostring(t or "") end,
+            SetVisible = function(_, v) Lbl.Visible = v ~= false end,
+        }
+    end
+    function Menu:SetVisible(v) Gui.Enabled = v ~= false end
+    function Menu:Destroy() pcall(function() Gui:Destroy() end) end
+    return Menu
+end
+
+-- AddDraggableLabel(text) -> a one-line floating draggable label with :SetText/:SetVisible/:Destroy
+function Library:AddDraggableLabel(Text)
+    local menu = Library:AddDraggableMenu(nil)
+    pcall(function() menu.Panel:FindFirstChildWhichIsA("Frame").Visible = false end)   -- hide the empty title bar
+    local lbl = menu:AddLabel(Text)
+    return {
+        SetText = function(_, t) lbl:SetText(t) end,
+        SetVisible = function(_, v) menu:SetVisible(v) end,
+        Destroy = function() menu:Destroy() end,
+    }
 end
 
 function Library:AddDraggableButton(...)
     return MakeStub("AddDraggableButton")
-end
-
-function Library:AddDraggableMenu(...)
-    local Stub = MakeStub("AddDraggableMenu")
-    return Stub, Stub
 end
 
 function Library:AddDraggableImageButton(...)

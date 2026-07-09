@@ -4400,8 +4400,68 @@ do
     function Funcs:AddViewport(Idx, Info)
         return MakeStub("AddViewport")
     end
-    function Funcs:AddImage(Idx, Info)
-        return MakeStub("AddImage")
+    -- Restored from upstream Obsidian (fork had it stubbed): a real ImageLabel element in a groupbox.
+    -- Usage: box:AddImage({ Image = "rbxthumb://...", Height = 64, Rounding = 8, Color = Color3, Transparency,
+    --                       ScaleType, RectOffset, RectSize, Visible }) -> { SetImage, SetVisible, Destroy }.
+    -- Accepts AddImage(Info) or AddImage(Idx, Info) (Idx ignored; images hold no value).
+    function Funcs:AddImage(...)
+        if self.Destroyed then return nil end
+
+        local First, Second = select(1, ...), select(2, ...)
+        local Info = (typeof(First) == "table" and First) or (typeof(Second) == "table" and Second) or {}
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+        local Height = tonumber(Info.Height) or 120
+
+        local Image = {
+            Connections = {},
+            Destroyed = false,
+            Visible = Info.Visible ~= false,
+            Type = "Image",
+        }
+
+        local ImageLabel = New("ImageLabel", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, Height),
+            Image = Info.Image or "",
+            ImageColor3 = Info.Color or Color3.fromRGB(255, 255, 255),
+            ImageTransparency = tonumber(Info.Transparency) or 0,
+            ScaleType = Info.ScaleType or Enum.ScaleType.Fit,
+            Visible = Image.Visible,
+            Parent = Container,
+        })
+        if Info.RectOffset then ImageLabel.ImageRectOffset = Info.RectOffset end
+        if Info.RectSize then ImageLabel.ImageRectSize = Info.RectSize end
+        if Info.Rounding then
+            New("UICorner", { CornerRadius = UDim.new(0, Info.Rounding), Parent = ImageLabel })
+        end
+
+        function Image:SetImage(NewImage)
+            Image.Image = NewImage
+            ImageLabel.Image = NewImage or ""
+        end
+        function Image:SetVisible(Visible: boolean)
+            Image.Visible = Visible
+            ImageLabel.Visible = Visible
+            Groupbox:Resize()
+        end
+        function Image:Destroy()
+            Image.Destroyed = true
+            for _, Connection in ipairs(Image.Connections) do
+                pcall(function() Connection:Disconnect() end)
+            end
+            ImageLabel:Destroy()
+            Groupbox:Resize()
+        end
+
+        Image.ImageLabel = ImageLabel
+        Image.Holder = ImageLabel
+        Image.Container = Container
+        table.insert(Groupbox.Elements, Image)
+
+        Groupbox:Resize()
+        return Image
     end
     function Funcs:AddVideo(Idx, Info)
         return MakeStub("AddVideo")

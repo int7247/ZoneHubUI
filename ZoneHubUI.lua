@@ -4176,8 +4176,14 @@ do
         function Dropdown:SetValue(Value)
             if Info.Multi then
                 local Table = {}
-				
-                for Val, Active in Value or {} do
+
+                -- Guard: a Multi dropdown must iterate a TABLE. An old/corrupt config can hand SetValue a
+                -- STRING (or nil) -> "attempt to iterate over a string value". Coerce a lone string into a
+                -- single-selection {[str]=true}; anything else non-table becomes {} (empty, no crash).
+                if typeof(Value) == "string" then Value = { [Value] = true }
+                elseif typeof(Value) ~= "table" then Value = {} end
+
+                for Val, Active in Value do
                     if typeof(Active) ~= "boolean" then
                         Table[Active] = true
                     elseif Active and table.find(Dropdown.Values, Val) then

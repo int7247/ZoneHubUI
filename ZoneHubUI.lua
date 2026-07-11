@@ -1309,16 +1309,30 @@ end
 -- AddDraggableMenu(titleText) -> menu object with :AddLabel(text) (-> {SetText,SetVisible}), :SetVisible, :Destroy
 function Library:AddDraggableMenu(TitleText, StartCollapsed)
     local Scheme = Library.Scheme
+    local ParentGui = DraggableParent()
+    -- RE-EXEC DEDUP: a draggable panel lives in CoreGui/gethui (survives ResetOnSpawn), so re-running the
+    -- script would stack a fresh "Track" on top of the old one. Before creating, destroy any prior panel
+    -- carrying the SAME title tag — matching how the main window replaces itself on re-exec.
+    if TitleText ~= nil then
+        pcall(function()
+            for _, g in ipairs(ParentGui:GetChildren()) do
+                if g.Name == "ZoneHubDraggableMenu" and g:GetAttribute("ZHMenuTitle") == tostring(TitleText) then
+                    g:Destroy()
+                end
+            end
+        end)
+    end
     local Gui = Instance.new("ScreenGui")
     Gui.Name = "ZoneHubDraggableMenu"
     Gui.ResetOnSpawn = false
     Gui.IgnoreGuiInset = true
     Gui.DisplayOrder = 2147482500
     Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    Gui.Parent = DraggableParent()
+    if TitleText ~= nil then pcall(function() Gui:SetAttribute("ZHMenuTitle", tostring(TitleText)) end) end
+    Gui.Parent = ParentGui
 
     local Panel = Instance.new("Frame")
-    Panel.Size = UDim2.fromOffset(212, 40)
+    Panel.Size = UDim2.fromOffset(248, 40)
     Panel.Position = UDim2.fromOffset(24, 200)
     Panel.BackgroundColor3 = Scheme.MainColor
     Panel.BorderSizePixel = 0
@@ -1373,9 +1387,9 @@ function Library:AddDraggableMenu(TitleText, StartCollapsed)
     local Collapsed = false
     local function applySize()
         if Collapsed then
-            Panel.Size = UDim2.fromOffset(212, 26)
+            Panel.Size = UDim2.fromOffset(248, 26)
         else
-            Panel.Size = UDim2.fromOffset(212, 26 + math.max(0, Layout.AbsoluteContentSize.Y) + 9)
+            Panel.Size = UDim2.fromOffset(248, 26 + math.max(0, Layout.AbsoluteContentSize.Y) + 9)
         end
     end
     local function setCollapsed(v)
@@ -1391,7 +1405,7 @@ function Library:AddDraggableMenu(TitleText, StartCollapsed)
     if StartCollapsed then setCollapsed(true) end
 
     local Menu = { Gui = Gui, Panel = Panel }
-    function Menu:AddLabel(Text)
+    function Menu:AddLabel(Text, Multiline)
         local Lbl = Instance.new("TextLabel")
         Lbl.Size = UDim2.new(1, 0, 0, 18)
         Lbl.BackgroundTransparency = 1
@@ -1401,6 +1415,14 @@ function Library:AddDraggableMenu(TitleText, StartCollapsed)
         Lbl.TextSize = 12
         Lbl.TextXAlignment = Enum.TextXAlignment.Left
         Lbl.RichText = true
+        -- Multiline label grows with its text (each "\n" adds a row) so a list of tracked creatures
+        -- shows every line + the panel auto-resizes (AbsoluteContentSize drives applySize). Single-line
+        -- labels keep the fixed 18px height (no regression for the other overlays).
+        if Multiline then
+            Lbl.TextWrapped = true
+            Lbl.TextYAlignment = Enum.TextYAlignment.Top
+            Lbl.AutomaticSize = Enum.AutomaticSize.Y
+        end
         Lbl.Parent = Content
         return {
             SetText = function(_, t) Lbl.Text = tostring(t or "") end,
@@ -3866,6 +3888,7 @@ do
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 0, 21),
             Text = "---",
+            RichText = true,   -- render <font> etc. in the selected value (matches the option list; harmless for plain values)
             TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 2,
